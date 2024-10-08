@@ -1,1 +1,45 @@
-console.log('test');
+const express = require('express');
+const fs = require('fs');
+const multer = require('multer');
+const OpenAI = require('openai');
+const cors = require('cors')
+const port = 3000;
+const app = express();
+
+app.use(cors())
+
+require('dotenv').config();
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads'); 
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+
+const upload = multer({ storage });
+
+app.post('/transcribe', upload.single('audio'), async (req, res) => {
+  try {
+    const transcription = await openai.audio.transcriptions.create({
+      file: fs.createReadStream(req.file.path),
+      model: 'whisper-1',
+    });
+    fs.unlinkSync(req.file.path);
+
+    return res.json({ transcription: transcription.text });
+  } catch (error) {
+    console.error('Error transcribing audio:', error);
+    return res.status(500).json({ error: 'Error transcribing audio' });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
+});
