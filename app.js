@@ -2,21 +2,24 @@ const express = require('express');
 const fs = require('fs');
 const multer = require('multer');
 const OpenAI = require('openai');
-const cors = require('cors')
-const port = 3000;
-const app = express();
-
-app.use(cors())
-
+const path = require('path');
 require('dotenv').config();
+
+const app = express();
+const port = 3000;
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads'); 
+    cb(null, 'uploads');
   },
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
